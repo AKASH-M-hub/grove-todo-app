@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grove - Your Productivity Garden</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?Nunito:wght@400;600;700&Pacifico&display=swap" rel="stylesheet">
+    <style>
+        /* --- Animation Keyframes --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.9); }
+        }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotateZ(0deg); }
+            100% { transform: translateY(110vh) rotateZ(360deg); }
+        }
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(-45deg, #e8f5e9, #c8e6c9, #a5d6a7, #81c784);
+            background-size: 400% 400%;
+            animation: gradient-animation 25s ease infinite;
+        }
+
+        .title-font {
+            font-family: 'Pacifico', cursive;
+        }
+
+        .theme-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-item {
+            animation: fadeIn 0.5s ease-out forwards;
+            /* --- ENHANCEMENT: Added transition for hover effect --- */
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        /* --- ENHANCEMENT: New glass hover effect --- */
+        .task-item:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            background: rgba(255,255,255,0.95);
+        }
+        .task-item.exit {
+            animation: fadeOut 0.4s ease-in forwards;
+        }
+
+        .custom-checkbox {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #a3b18a;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-checkbox:checked {
+            background-color: #588157;
+            border-color: #588157;
+        }
+        .custom-checkbox:checked::after {
+            content: '✔';
+            color: white;
+            font-size: 14px;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .custom-checkbox:hover {
+            transform: scale(1.1);
+        }
+
+        .task-text.completed {
+            text-decoration-color: #344e41;
+        }
+
+        #leaf-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .leaf {
+            position: absolute;
+            top: -50px;
+            width: 20px;
+            height: 20px;
+            background-color: #588157;
+            border-radius: 0% 50% 0% 50%;
+            opacity: 0.6;
+            animation-name: fall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        /* --- ENHANCEMENT: Style for the loading spinner --- */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-bottom-color: #3a6b57;
+            border-radius: 50%;
+            display: block;
+            margin: 40px auto;
+            box-sizing: border-box;
+            animation: spin 1s linear infinite;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
+        ::-webkit-scrollbar-thumb { background: #a3b18a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #588157; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="leaf-container"></div>
+
+    <main class="w-full max-w-lg mx-auto theme-card rounded-2xl p-6 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="title-font text-5xl md:text-6xl text-[#2c5e4c]">Grove</h1>
+            <p class="text-gray-600 mt-2">Plant your tasks, watch your productivity grow.</p>
+        </header>
+
+        <form id="task-form" class="flex items-center gap-3 mb-8">
+            <input type="text" id="task-input" required
+                   class="flex-grow bg-white/50 border-2 border-gray-300 rounded-lg py-3 px-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#588157] focus:border-[#588157] transition-all duration-300"
+                   placeholder="Plant a new task...">
+            <button type="submit" class="font-bold py-3 px-6 bg-[#3a6b57] text-white rounded-lg shadow-md hover:bg-[#2c5e4c] transform hover:scale-105 transition-all duration-300">
+                Add
+            </button>
+        </form>
+
+        <div class="h-72 overflow-y-auto pr-2">
+            <ul id="task-list" class="space-y-3">
+                <!-- Loading spinner will appear here -->
+            </ul>
+        </div>
+        
+        <!-- ENHANCEMENT: Footer with active task counter -->
+        <footer class="mt-6 pt-4 border-t border-gray-300/50 text-center">
+            <p id="task-counter" class="text-gray-600"></p>
+        </footer>
+    </main>
+
+    <script>
+        const apiUrl = 'http://localhost:3000/tasks';
+        const taskList = document.getElementById('task-list');
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskCounter = document.getElementById('task-counter'); // Get counter element
+
+        // --- Sound Effects Setup (Unchanged) ---
+        const addSynth = new Tone.PluckSynth().toDestination();
+        const completeSynth = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 } }).toDestination();
+        const deleteSynth = new Tone.MembraneSynth().toDestination();
+
+        const playSound = (type) => {
+            if (Tone.context.state !== 'running') { Tone.context.resume(); }
+            if (type === 'add') addSynth.triggerAttackRelease("C4", "8n");
+            if (type === 'complete') completeSynth.triggerAttackRelease("G5", "16n");
+            if (type === 'delete') deleteSynth.triggerAttackRelease("C2", "8n");
+        }
+
+        const fetchTasks = async () => {
+            // ENHANCEMENT: Show loader before fetching
+            taskList.innerHTML = '<div class="loader"></div>';
+            try {
+                const response = await fetch(apiUrl);
+                const tasks = await response.json();
+                taskList.innerHTML = ''; // Clear loader
+
+                if (tasks.length === 0) {
+                    taskList.innerHTML = `<li class="text-center text-gray-500">Your garden is clear. Plant a new task!</li>`;
+                }
+
+                tasks.forEach(task => {
+                    const li = document.createElement('li');
+                    li.className = 'task-item bg-white/60 flex items-center justify-between p-4 rounded-lg shadow-sm';
+                    li.dataset.id = task.id;
+                    const taskContent = `
+                        <div class="flex items-center gap-4">
+                            <input type="checkbox" class="custom-checkbox" data-id="${task.id}" ${task.completed ? 'checked' : ''}>
+                            <span class="task-text text-lg text-gray-700 ${task.completed ? 'line-through text-gray-400 completed' : ''}">${task.text}</span>
+                        </div>
+                        <button class="delete-btn text-gray-400 hover:text-red-500 font-bold text-xl transform hover:scale-125 transition-transform" data-id="${task.id}">×</button>
+                    `;
+                    li.innerHTML = taskContent;
+                    taskList.appendChild(li);
+                });
+                
+                // ENHANCEMENT: Update task counter
+                updateTaskCounter(tasks);
+
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                taskList.innerHTML = `<li class="text-center text-red-500">Connection error. Could not reach your backend.</li>`;
+            }
+        };
+        
+        // ENHANCEMENT: Function to update the task counter
+        const updateTaskCounter = (tasks) => {
+            const activeTasks = tasks.filter(task => !task.completed).length;
+            if (tasks.length > 0 && activeTasks === 0) {
+                taskCounter.textContent = 'All tasks complete! 🌱';
+            } else if (activeTasks === 1) {
+                taskCounter.textContent = '1 task remaining';
+            } else {
+                taskCounter.textContent = `${activeTasks} tasks remaining`;
+            }
+        };
+
+        taskForm.addEventListener('submit', async (e) => { /* ... Unchanged ... */ });
+        taskList.addEventListener('click', async (e) => { /* ... Unchanged ... */ });
+        
+        // Unchanged Event Listeners
+        taskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = taskInput.value.trim();
+            if (text === '') return;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }), });
+                if (response.ok) { playSound('add'); taskInput.value = ''; fetchTasks(); }
+            } catch (error) { console.error('Error adding task:', error); }
+        });
+        taskList.addEventListener('click', async (e) => {
+            const target = e.target;
+            const id = target.dataset.id;
+            if (!id) return;
+            const li = target.closest('.task-item');
+            if (target.matches('.custom-checkbox')) {
+                try {
+                    const response = await fetch(`${apiUrl}/${id}`, { method: 'PUT' });
+                    if (response.ok) { if(target.checked) playSound('complete'); fetchTasks(); }
+                } catch (error) { console.error('Error updating task:', error); }
+            }
+            if (target.matches('.delete-btn')) {
+                li.classList.add('exit');
+                playSound('delete');
+                li.addEventListener('animationend', async () => {
+                    try { await fetch(`${apiUrl}/${id}`, { method: 'DELETE' }); fetchTasks();
+                    } catch (error) { console.error('Error deleting task:', error); li.classList.remove('exit'); }
+                }, { once: true });
+            }
+        });
+
+        const createFallingLeaves = () => {
+            const container = document.getElementById('leaf-container');
+            const leafCount = 15; 
+            for (let i = 0; i < leafCount; i++) {
+                const leaf = document.createElement('div');
+                leaf.classList.add('leaf');
+                leaf.style.left = `${Math.random() * 100}vw`;
+                leaf.style.animationDuration = `${Math.random() * 5 + 10}s`; 
+                leaf.style.animationDelay = `${Math.random() * 10}s`;
+                const size = Math.random() * 10 + 10;
+                leaf.style.width = `${size}px`;
+                leaf.style.height = `${size}px`;
+                leaf.style.opacity = Math.random() * 0.4 + 0.3;
+                container.appendChild(leaf);
+            }
+        };
+
+        fetchTasks();
+        createFallingLeaves();
+    </script>
+
+</body>
+</html>
+

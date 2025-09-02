@@ -1,0 +1,22 @@
+[
+  {
+    "id": 2,
+    "text": "study",
+    "completed": false
+  },
+  {
+    "id": 3,
+    "text": "explore",
+    "completed": false
+  },
+  {
+    "id": 4,
+    "text": "learn",
+    "completed": false
+  },
+  {
+    "id": 8,
+    "text": "Games",
+    "completed": false
+  }
+]
